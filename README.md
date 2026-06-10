@@ -69,6 +69,29 @@ Open the URL in your browser, load or paste an article, select ≥2 audience gro
 
 ---
 
+## Deploying / Sharing a Live Link (Render)
+
+To give your supervisors a public URL without keeping your laptop running:
+
+1. **Push this repo to GitHub** (it already has `pyproject.toml`, `render.yaml`, and `Procfile`-equivalent config ready to go).
+2. Go to **[render.com](https://render.com)** → **New → Blueprint** → connect your GitHub repo. Render will detect `render.yaml` automatically and create a free **Web Service** with:
+   - Build: `pip install -e .`
+   - Start: `gunicorn 'crossfire.app:app' --bind 0.0.0.0:$PORT --timeout 300 --workers 2`
+3. In the Render dashboard, set the API key environment variables (these are **not** committed to git):
+   - `OPENAI_API_KEY`
+   - `MISTRAL_API_KEY`
+   - `NOVITA_API_KEY` (used by the Qwen model)
+   - `TOGETHER_API_KEY` (optional)
+4. Deploy. Render gives you a URL like `https://crossfire.onrender.com` — share that with your supervisors.
+
+**Notes:**
+- The free Render plan spins down after inactivity, so the first request after idling can take ~30–60s to wake up.
+- `--timeout 300` is important: a single audit can run up to `models × groups × 3` LLM calls in parallel, which can take longer than the default 30s worker timeout.
+- Each LLM call costs API credits on your keys — be mindful if sharing a public link broadly.
+- `logs/` (per-call JSON logs) are written to the container's ephemeral filesystem and will be lost on redeploy/restart — fine for a demo, not for long-term storage.
+
+---
+
 ## How Effectiveness Is Calculated
 
 ### Step 1 — Three Independent Runs (temperature = 0.7)

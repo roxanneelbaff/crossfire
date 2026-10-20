@@ -88,7 +88,34 @@ To give your supervisors a public URL without keeping your laptop running:
 - The free Render plan spins down after inactivity, so the first request after idling can take ~30–60s to wake up.
 - `--timeout 300` is important: a single audit can run up to `models × groups × 3` LLM calls in parallel, which can take longer than the default 30s worker timeout.
 - Each LLM call costs API credits on your keys — be mindful if sharing a public link broadly.
-- `logs/` (per-call JSON logs) are written to the container's ephemeral filesystem and will be lost on redeploy/restart — fine for a demo, not for long-term storage.
+
+---
+
+## Logging & Persisting Logs
+
+Every individual LLM call is appended as one JSON line to **`logs/calls.jsonl`** (newline-delimited JSON). Each record includes:
+
+- `timestamp` (UTC, ISO 8601)
+- `model_key`, `model_name`, `model_provider`, `temperature`
+- `audience_group`, `audience_group_label`, `run` (1–3)
+- `label`, `confidence`, `rationale`
+- `article` — `title`, `url`, `source`, `domain`, `author`, `date`
+- `text_analyzed` — the full article body sent to the model
+- `system_prompt`, `user_prompt`
+
+### Persisting logs on Render (ephemeral filesystem)
+
+Render's free web service filesystem is **wiped on every redeploy/restart**, so `logs/calls.jsonl` won't survive long-term unless you do one of:
+
+1. **Download periodically** — visit:
+   ```
+   https://<your-app>.onrender.com/export-logs?key=<SECRET_KEY>
+   ```
+   (`<SECRET_KEY>` is the `SECRET_KEY` env var set on Render — find it under your service's Environment tab). This streams the current `calls.jsonl` as a download.
+
+2. **Forward to an external sink** — set the `LOG_WEBHOOK_URL` env var to any URL that accepts a JSON POST (e.g. a Zapier/Make.com webhook writing to a Google Sheet/Airtable, or a small logging endpoint of your own). Every call is POSTed there in addition to being appended locally — best-effort, failures are swallowed so they never break an analysis run.
+
+3. **Add a Render persistent disk** (paid add-on, Starter plan or above) mounted at `/opt/render/project/src/logs` — then `calls.jsonl` survives restarts/redeploys natively.
 
 ---
 

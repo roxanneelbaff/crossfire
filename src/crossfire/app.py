@@ -8,12 +8,14 @@ import io
 import json
 import logging
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from urllib.parse import urlparse
 
+import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request, Response
+from flask import Flask, jsonify, render_template, request, Response, send_file
 
 from .audience_profiles import AUDIENCE_GROUPS, GROUPS_BY_ID
 from .article_fetcher import (
@@ -65,6 +67,35 @@ def _configured_models() -> dict:
     return out
 
 
+# ─── Logging ─────────────────────────────────────────────────────────────────
+
+_LOG_LOCK = threading.Lock()
+CALLS_LOG_FILE = LOGS_DIR / "calls.jsonl"
+LOG_WEBHOOK_URL = os.environ.get("LOG_WEBHOOK_URL", "")
+
+
+def _append_log(log_entry: dict) -> None:
+    """
+    Append one LLM-call record to logs/calls.jsonl (newline-delimited JSON),
+    and optionally forward it to an external webhook (LOG_WEBHOOK_URL) for
+    off-disk persistence on platforms with ephemeral filesystems (e.g. Render
+    free tier, where local logs/ is wiped on every redeploy/restart).
+    """
+    line = json.dumps(log_entry, ensure_ascii=False)
+    try:
+        with _LOG_LOCK:
+            with open(CALLS_LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+    except Exception:
+        logger.exception("Failed to write call log to %s", CALLS_LOG_FILE)
+
+    if LOG_WEBHOOK_URL:
+        try:
+            requests.post(LOG_WEBHOOK_URL, json=log_entry, timeout=5)
+        except Exception:
+            logger.warning("Failed to forward log entry to LOG_WEBHOOK_URL", exc_info=True)
+
+
 # ─── LLM call ────────────────────────────────────────────────────────────────
 
 def _single_run(model_key: str, group: dict, article: dict, run_idx: int) -> RunResult:
@@ -98,21 +129,32 @@ def _single_run(model_key: str, group: dict, article: dict, run_idx: int) -> Run
         result = RunResult(label=EffectLabel.ERROR, confidence=None, rationale=str(exc))
 
     # Log to file
+    cfg = MODELS.get(model_key)
     log_entry = {
-        "timestamp": datetime.utcnow().isoformat(),
-        "model": model_key,
-        "group": group["id"],
-        "run": run_idx,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "model_key": model_key,
+        "model_name": cfg.model if cfg else model_key,
+        "model_provider": cfg.model_provider if cfg else None,
         "temperature": TEMPERATURE,
+        "audience_group": group["id"],
+        "audience_group_label": group.get("label"),
+        "run": run_idx,
+        "label": result.label.value if result.label is not None else None,
+        "confidence": result.confidence.value if result.confidence else None,
+        "rationale": result.rationale,
+        "article": {
+            "title": article.get("title", ""),
+            "url": article.get("url", ""),
+            "source": article.get("source", ""),
+            "domain": article.get("domain", ""),
+            "author": article.get("author", ""),
+            "date": article.get("date", ""),
+        },
+        "text_analyzed": article.get("body", ""),
         "system_prompt": sys_p,
         "user_prompt": usr_p,
-        "response_parsed": result.model_dump(mode="json"),
     }
-    log_file = LOGS_DIR / f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{model_key}_{group['id']}_run{run_idx}.json"
-    try:
-        log_file.write_text(json.dumps(log_entry, ensure_ascii=False, indent=2))
-    except Exception:
-        pass
+    _append_log(log_entry)
 
     return result
 
@@ -298,6 +340,27 @@ def export_csv():
         csv_data,
         mimetype="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@app.route("/export-logs")
+def export_logs():
+    """
+    Download the cumulative per-call LLM log (JSON Lines).
+
+    Protected by a `key` query param matching SECRET_KEY, since logs may
+    contain full article text and rationales. Useful for pulling logs off
+    of ephemeral hosting (e.g. Render free tier) before a redeploy.
+    """
+    if request.args.get("key") != app.secret_key:
+        return jsonify({"error": "unauthorized"}), 401
+    if not CALLS_LOG_FILE.exists():
+        return jsonify({"error": "no logs yet"}), 404
+    return send_file(
+        CALLS_LOG_FILE,
+        mimetype="application/x-ndjson",
+        as_attachment=True,
+        download_name=f"crossfire_calls_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jsonl",
     )
 
 

@@ -18,3 +18,5 @@ services:
         sync: false
       - key: TOGETHER_API_KEY
         sync: false
+      - key: LOG_WEBHOOK_URL
+        sync: false

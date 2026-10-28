@@ -147,14 +147,13 @@
           {% set g2 = selected_groups | selectattr('id','equalto',pair.g2) | first %}
           {% set e1 = res.group_effects.get(pair.g1, {}).get('final_label','—') %}
           {% set e2 = res.group_effects.get(pair.g2, {}).get('final_label','—') %}
-          <tr{% if pair.is_worst %} class="pairwise-worst"{% endif %}>
+          <tr>
             <td>{{ g1.label if g1 else pair.g1 }}</td>
             <td><span class="label-badge label-{{ e1 }}" style="font-size:0.62rem;padding:2px 8px;">{{ e1 }}</span></td>
             <td>{{ g2.label if g2 else pair.g2 }}</td>
             <td><span class="label-badge label-{{ e2 }}" style="font-size:0.62rem;padding:2px 8px;">{{ e2 }}</span></td>
             <td>
               <span class="quality-badge quality-{{ pair.quality }}" style="font-size:0.65rem;padding:2px 10px;">{{ pair.quality }}</span>
-              {% if pair.is_worst %}<span style="font-size:0.65rem;color:var(--crimson);margin-left:4px;">★ worst</span>{% endif %}
             </td>
           </tr>
           {% endfor %}

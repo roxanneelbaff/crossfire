@@ -21,7 +21,7 @@ from .audience_profiles import AUDIENCE_GROUPS, GROUPS_BY_ID
 from .article_fetcher import (
     fetch_aljazeera_list, fetch_aljazeera_article,
     fetch_atlantic_list, fetch_atlantic_article,
-    fetch_nationalreview_list, fetch_nationalreview_article,
+    fetch_cityjournal_list, fetch_cityjournal_article,
 )
 from .data_schema import AudienceEffectResponse, EffectLabel, GroupEffect, ModelResult, RunResult
 from .model_registry import MODELS
@@ -243,8 +243,8 @@ def fetch_article_route():
             data = fetch_aljazeera_article(url) if url else fetch_aljazeera_list()
         elif source == "atlantic":
             data = fetch_atlantic_article(url) if url else fetch_atlantic_list()
-        elif source == "nationalreview":
-            data = fetch_nationalreview_article(url) if url else fetch_nationalreview_list()
+        elif source == "cityjournal":
+            data = fetch_cityjournal_article(url) if url else fetch_cityjournal_list()
         else:
             return jsonify({"error": "Unknown source"}), 400
         return jsonify(data)
@@ -274,8 +274,8 @@ def analyze():
             article["source"] = "Al Jazeera"
         elif "theatlantic" in domain:
             article["source"] = "The Atlantic"
-        elif "nationalreview" in domain:
-            article["source"] = "National Review"
+        elif "city-journal" in domain:
+            article["source"] = "City Journal"
         else:
             article["source"] = "Pasted text"
     if not article.get("title"):

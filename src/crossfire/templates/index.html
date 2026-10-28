@@ -23,17 +23,26 @@
         <span class="step-num">1</span> Load Argumentative Text
       </div>
 
-      <div class="d-flex gap-2 mb-3 flex-wrap">
-        <button type="button" class="btn-source" id="btn-load-atlantic">
-          🗽 The Atlantic — Ideas
-        </button>
-        <button type="button" class="btn-source" id="btn-load-nationalreview">
-          🦅 National Review — Latest
-        </button>
-        <button type="button" class="btn-source" id="btn-load-aljazeera">
-          📰 Al Jazeera — Opinion
-        </button>
-        <span class="text-muted align-self-center" style="font-size:0.78rem;">or paste text directly below</span>
+      <div class="d-flex gap-3 mb-3 flex-wrap align-items-start">
+        <div>
+          <div class="source-lean-label" style="color:var(--lib-color);">Liberal-leaning</div>
+          <button type="button" class="btn-source" id="btn-load-atlantic">
+            🗽 The Atlantic — Ideas
+          </button>
+        </div>
+        <div>
+          <div class="source-lean-label" style="color:var(--con-color);">Conservative-leaning</div>
+          <button type="button" class="btn-source" id="btn-load-cityjournal">
+            🏛 City Journal — Latest
+          </button>
+        </div>
+        <div class="align-self-end">
+          <div class="source-lean-label" style="color:var(--mod-color);">International</div>
+          <button type="button" class="btn-source" id="btn-load-aljazeera">
+            📰 Al Jazeera — Opinion
+          </button>
+        </div>
+        <span class="text-muted align-self-center ms-1" style="font-size:0.78rem;">or paste text directly below</span>
       </div>
 
       <!-- Article metadata bar -->
@@ -189,17 +198,17 @@
   </div>
 </div>
 
-<!-- ── National Review modal ──────────────────────────────────── -->
-<div class="modal fade" id="modal-nationalreview" tabindex="-1" aria-hidden="true">
+<!-- ── City Journal modal ─────────────────────────────────────── -->
+<div class="modal fade" id="modal-cityjournal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border-radius:10px;overflow:hidden;">
       <div class="modal-header" style="background:var(--navy);border:none;">
         <h5 class="modal-title" style="font-family:'Playfair Display',serif;color:#fff;font-size:1.05rem;">
-          National Review — Latest Articles
+          City Journal — Latest Articles
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-2" id="modal-nationalreview-body">
+      <div class="modal-body p-2" id="modal-cityjournal-body">
         <div class="text-center py-4 text-muted">Loading…</div>
       </div>
     </div>
@@ -271,7 +280,7 @@ function showMeta(data) {
 const SOURCE_MODAL = {
   aljazeera:      { modalId: 'modal-aljazeera',     bodyId: 'modal-aljazeera-body' },
   atlantic:       { modalId: 'modal-atlantic',       bodyId: 'modal-atlantic-body' },
-  nationalreview: { modalId: 'modal-nationalreview', bodyId: 'modal-nationalreview-body' },
+  cityjournal: { modalId: 'modal-cityjournal', bodyId: 'modal-cityjournal-body' },
 };
 async function openSourceModal(source) {
   const { modalId, bodyId } = SOURCE_MODAL[source];
@@ -327,7 +336,7 @@ async function openSourceModal(source) {
 }
 
 document.getElementById('btn-load-atlantic').addEventListener('click', () => openSourceModal('atlantic'));
-document.getElementById('btn-load-nationalreview').addEventListener('click', () => openSourceModal('nationalreview'));
+document.getElementById('btn-load-cityjournal').addEventListener('click', () => openSourceModal('cityjournal'));
 document.getElementById('btn-load-aljazeera').addEventListener('click', () => openSourceModal('aljazeera'));
 
 /* ── Form submit ─────────────────────────────────────────────── */

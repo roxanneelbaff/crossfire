@@ -22,10 +22,10 @@ class ModelConfig:
 MODELS = {
     "qwen_small": ModelConfig(
         key="qwen_small",
-        model="qwen/qwen2.5-72b-instruct",
+        model="qwen/qwen3.8-27b",
         model_provider="novita",
         with_structure=False,
-        label="Qwen 2.5-72B",
+        label="QWEN 3.8-27b",
         env_key="NOVITA_API_KEY",
     ),
     "mistral_small": ModelConfig(

@@ -229,9 +229,9 @@ def fetch_atlantic_article(url: str) -> dict:
     }
 
 
-def fetch_nationalreview_list(limit: int = 8) -> list:
-    """Return list of latest articles from National Review via RSS."""
-    resp = requests.get("https://www.nationalreview.com/feed/", headers=HEADERS, timeout=15)
+def fetch_cityjournal_list(limit: int = 8) -> list:
+    """Return list of latest articles from City Journal via RSS."""
+    resp = requests.get("https://city-journal.org/rss.xml", headers=HEADERS, timeout=15)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "xml")
 
@@ -253,11 +253,9 @@ def fetch_nationalreview_list(limit: int = 8) -> list:
     return articles
 
 
-def fetch_nationalreview_article(url: str) -> dict:
-    """Fetch full article content from National Review via its AMP page."""
-    # NR's main pages are JS-rendered; the AMP version returns static HTML.
-    amp_url = url.rstrip("/") + "/amp/"
-    resp = requests.get(amp_url, headers=HEADERS, timeout=20)
+def fetch_cityjournal_article(url: str) -> dict:
+    """Fetch full article content from City Journal."""
+    resp = requests.get(url, headers=HEADERS, timeout=20)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -269,21 +267,16 @@ def fetch_nationalreview_article(url: str) -> dict:
         og = soup.find("meta", attrs={"property": "og:title"})
         if og and og.get("content"):
             title = og["content"].strip()
-    if " | " in title:
-        title = title.split(" | ")[0].strip()
 
     author = ""
     meta_author = soup.find("meta", attrs={"name": "author"})
     if meta_author and meta_author.get("content"):
         author = meta_author["content"].strip()
     if not author:
-        for sel in ["[class*='author']", "[class*='byline']", "[rel='author']"]:
+        for sel in [".m_article-byline", "[class*='byline']", "[class*='author']", "[rel='author']"]:
             tag = soup.select_one(sel)
             if tag:
                 author = tag.get_text(strip=True)
-                # Remove "By" prefix artifacts e.g. "ByJohn Smith"
-                if author.startswith("By"):
-                    author = author[2:].strip()
                 break
 
     date = ""
@@ -295,7 +288,18 @@ def fetch_nationalreview_article(url: str) -> dict:
         if t:
             date = t.get("datetime", t.get_text(strip=True))
 
-    paragraphs = soup.find_all("p")
+    container = (
+        soup.select_one(".single-article")
+        or soup.select_one(".m_article-detail")
+        or soup.select_one(".main-content")
+        or soup.select_one("article")
+    )
+    if container:
+        for tag in container.select("script, style, aside, nav, [class*='related'], [class*='donate'], [class*='audio']"):
+            tag.decompose()
+        paragraphs = container.find_all("p")
+    else:
+        paragraphs = soup.find_all("p")
     body = "\n\n".join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
 
     return {
@@ -304,6 +308,6 @@ def fetch_nationalreview_article(url: str) -> dict:
         "date": date,
         "body": body,
         "url": url,
-        "source": "National Review",
-        "domain": "nationalreview.com",
+        "source": "City Journal",
+        "domain": "city-journal.org",
     }

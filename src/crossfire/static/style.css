@@ -146,6 +146,15 @@ body {
 .pill-liberal      { background: var(--lib-color); }
 .pill-moderate     { background: var(--mod-color); }
 
+/* ── Source lean labels ──────────────────────────────────────── */
+.source-lean-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
 /* ── Source buttons ──────────────────────────────────────────── */
 .btn-source {
   background: var(--navy);
@@ -358,7 +367,6 @@ body {
   padding: 0.45rem 0.75rem;
 }
 .pairwise-table tbody td { padding: 0.4rem 0.75rem; }
-.pairwise-worst td { background: #fdf3e4 !important; font-weight: 600; }
 
 /* ── Loading overlay ─────────────────────────────────────────── */
 #loading-overlay {

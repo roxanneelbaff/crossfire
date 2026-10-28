@@ -1,5 +1,5 @@
 """
-Argument Quality Auditor — Flask application
+Argument Quality Simulator — Flask application
 Audience-Aware Computational Argumentation · El Baff, 2026
 """
 
@@ -20,7 +20,8 @@ from flask import Flask, jsonify, render_template, request, Response, send_file
 from .audience_profiles import AUDIENCE_GROUPS, GROUPS_BY_ID
 from .article_fetcher import (
     fetch_aljazeera_list, fetch_aljazeera_article,
-    fetch_zeteo_list, fetch_zeteo_article,
+    fetch_atlantic_list, fetch_atlantic_article,
+    fetch_nationalreview_list, fetch_nationalreview_article,
 )
 from .data_schema import AudienceEffectResponse, EffectLabel, GroupEffect, ModelResult, RunResult
 from .model_registry import MODELS
@@ -39,7 +40,8 @@ LOGS_DIR.mkdir(exist_ok=True)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TEMPERATURE = 0.7
+TEMPERATURE = 0.0
+RUNS_PER_GROUP = 1
 
 # ─── LLM instances ───────────────────────────────────────────────────────────
 
@@ -163,7 +165,7 @@ def _single_run(model_key: str, group: dict, article: dict, run_idx: int) -> Run
 
 def run_analysis(article: dict, group_ids: list, model_keys: list) -> list:
     """
-    Run the full 3-level pipeline for selected groups and models.
+    Run the full pipeline for selected groups and models.
     Returns a list of ModelResult dicts (JSON-serialisable).
     """
     groups = [GROUPS_BY_ID[gid] for gid in group_ids if gid in GROUPS_BY_ID]
@@ -182,11 +184,11 @@ def run_analysis(article: dict, group_ids: list, model_keys: list) -> list:
             ).model_dump(mode="json"))
             continue
 
-        # Run all (group × 3 runs) in parallel
+        # Run all (group × run) calls in parallel
         futures_map = {}
         with ThreadPoolExecutor(max_workers=12) as executor:
             for group in groups:
-                for run_idx in range(1, 4):
+                for run_idx in range(1, RUNS_PER_GROUP + 1):
                     future = executor.submit(_single_run, model_key, group, article, run_idx)
                     futures_map[future] = (group["id"], run_idx)
 
@@ -202,7 +204,7 @@ def run_analysis(article: dict, group_ids: list, model_keys: list) -> list:
             runs_dict = raw_results.get(gid, {})
             runs_list = [
                 runs_dict.get(i, RunResult(label=EffectLabel.ERROR, confidence=None, rationale=""))
-                for i in range(1, 4)
+                for i in range(1, RUNS_PER_GROUP + 1)
             ]
             final_label = apply_level1_majority([r.model_dump(mode="json") for r in runs_list])
             group_effects[gid] = GroupEffect(final_label=final_label, runs=runs_list)
@@ -239,8 +241,10 @@ def fetch_article_route():
     try:
         if source == "aljazeera":
             data = fetch_aljazeera_article(url) if url else fetch_aljazeera_list()
-        elif source == "zeteo":
-            data = fetch_zeteo_article(url) if url else fetch_zeteo_list()
+        elif source == "atlantic":
+            data = fetch_atlantic_article(url) if url else fetch_atlantic_list()
+        elif source == "nationalreview":
+            data = fetch_nationalreview_article(url) if url else fetch_nationalreview_list()
         else:
             return jsonify({"error": "Unknown source"}), 400
         return jsonify(data)
@@ -268,8 +272,10 @@ def analyze():
         domain = article.get("domain", "")
         if "aljazeera" in domain:
             article["source"] = "Al Jazeera"
-        elif "zeteo" in domain:
-            article["source"] = "Zeteo"
+        elif "theatlantic" in domain:
+            article["source"] = "The Atlantic"
+        elif "nationalreview" in domain:
+            article["source"] = "National Review"
         else:
             article["source"] = "Pasted text"
     if not article.get("title"):
@@ -303,7 +309,7 @@ def export_csv():
     # Header
     base_cols = ["model", "group", "final_label"]
     run_cols = []
-    for i in range(1, 4):
+    for i in range(1, RUNS_PER_GROUP + 1):
         run_cols += [f"run{i}_label", f"run{i}_confidence", f"run{i}_rationale"]
     pair_cols = ["pairwise_g1", "pairwise_g2", "pairwise_quality"]
     writer.writerow(base_cols + run_cols + ["overall_quality"] + pair_cols)
@@ -315,7 +321,7 @@ def export_csv():
         pairwise = model_result.get("pairwise_quality", [])
 
         for gid, gdata in group_effects.items():
-            runs = gdata.get("runs", [{}, {}, {}])
+            runs = gdata.get("runs", [{}])
             run_vals = []
             for run in runs:
                 run_vals += [run.get("label", ""), run.get("confidence", ""), run.get("rationale", "")]

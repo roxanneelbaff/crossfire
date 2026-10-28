@@ -8,7 +8,7 @@
   <!-- Page heading -->
   <div class="mb-4">
     <h1 style="font-family:'Playfair Display',serif;color:var(--navy);font-size:1.8rem;font-weight:700;">
-      Argument Quality Auditor
+      Argument Quality Simulator
     </h1>
     <p class="text-muted" style="font-size:0.85rem;letter-spacing:0.04em;">
       Audience-Aware Computational Argumentation &middot; El Baff, 2026
@@ -24,11 +24,14 @@
       </div>
 
       <div class="d-flex gap-2 mb-3 flex-wrap">
+        <button type="button" class="btn-source" id="btn-load-atlantic">
+          🗽 The Atlantic — Ideas
+        </button>
+        <button type="button" class="btn-source" id="btn-load-nationalreview">
+          🦅 National Review — Latest
+        </button>
         <button type="button" class="btn-source" id="btn-load-aljazeera">
           📰 Al Jazeera — Opinion
-        </button>
-        <button type="button" class="btn-source" id="btn-load-zeteo">
-          📄 Zeteo — Latest
         </button>
         <span class="text-muted align-self-center" style="font-size:0.78rem;">or paste text directly below</span>
       </div>
@@ -63,31 +66,55 @@
       <div class="section-header d-flex align-items-center justify-content-between">
         <span class="d-flex align-items-center">
           <span class="step-num">2</span> Select Audience Groups
-          <span class="ms-2 text-muted" style="font-size:0.75rem;font-weight:400;">(minimum 2)</span>
+          <span class="ms-2 text-muted" style="font-size:0.75rem;font-weight:400;">(select exactly 2 — resource limit)</span>
         </span>
         <span class="d-flex gap-2">
-          <button type="button" class="btn-secondary-cf" id="btn-select-all" style="font-size:0.7rem;padding:3px 10px;">Select All</button>
           <button type="button" class="btn-secondary-cf" id="btn-clear-groups" style="font-size:0.7rem;padding:3px 10px;">Clear</button>
         </span>
       </div>
 
-      <div class="row g-2" id="group-grid">
-        {% for group in groups %}
-        <div class="col-12 col-sm-6 col-lg-4">
-          <label class="group-card d-block" data-group-id="{{ group.id }}">
+      <div class="row g-3" id="group-grid">
+        <!-- Conservative column -->
+        <div class="col-12 col-md-6">
+          <div class="mb-2" style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;color:var(--con-color);text-transform:uppercase;">Conservative</div>
+          {% for group in groups if group.parent == 'conservative' %}
+          <label class="group-card d-block mb-2" data-group-id="{{ group.id }}">
             <input type="checkbox" class="group-checkbox d-none" name="groups" value="{{ group.id }}"/>
             <div class="d-flex justify-content-between align-items-start mb-1">
               <div class="group-name">{{ group.label }}</div>
-              <span class="ideology-pill pill-{{ group.parent }}">{{ group.parent }}</span>
             </div>
             <div class="group-teaser">{{ group.teaser }}</div>
           </label>
+          {% endfor %}
         </div>
-        {% endfor %}
+
+        <!-- Liberal + Moderate column -->
+        <div class="col-12 col-md-6">
+          <div class="mb-2" style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;color:var(--lib-color);text-transform:uppercase;">Liberal</div>
+          {% for group in groups if group.parent == 'liberal' %}
+          <label class="group-card d-block mb-2" data-group-id="{{ group.id }}">
+            <input type="checkbox" class="group-checkbox d-none" name="groups" value="{{ group.id }}"/>
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <div class="group-name">{{ group.label }}</div>
+            </div>
+            <div class="group-teaser">{{ group.teaser }}</div>
+          </label>
+          {% endfor %}
+          {% for group in groups if group.parent == 'moderate' %}
+          <div class="mt-2 mb-2" style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;color:var(--mod-color);text-transform:uppercase;">Moderate</div>
+          <label class="group-card d-block mb-2" data-group-id="{{ group.id }}">
+            <input type="checkbox" class="group-checkbox d-none" name="groups" value="{{ group.id }}"/>
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <div class="group-name">{{ group.label }}</div>
+            </div>
+            <div class="group-teaser">{{ group.teaser }}</div>
+          </label>
+          {% endfor %}
+        </div>
       </div>
 
       <div id="group-validation-msg" class="text-danger mt-2" style="font-size:0.8rem;display:none;">
-        Please select at least 2 audience groups.
+        Please select exactly 2 audience groups.
       </div>
     </div>
 
@@ -100,11 +127,11 @@
         {% for key, cfg in models.items() %}
         <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
           <input
-            type="checkbox"
+            type="radio"
             class="model-checkbox"
             name="models"
             value="{{ key }}"
-            {% if cfg.configured %}checked{% else %}disabled{% endif %}
+            {% if cfg.configured %}{% if loop.first %}checked{% endif %}{% else %}disabled{% endif %}
           />
           <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:{% if cfg.configured %}var(--navy){% else %}#aaa{% endif %}">
             {{ cfg.label }}
@@ -120,7 +147,7 @@
     <!-- ── Section 4: Run ─────────────────────────────────── -->
     <div class="d-flex justify-content-end mb-5">
       <button type="submit" class="btn-primary-cf" id="btn-run" disabled>
-        ▶ Run Quality Audit
+        ▶ Simulate
       </button>
     </div>
 
@@ -145,17 +172,34 @@
   </div>
 </div>
 
-<!-- ── Zeteo modal ────────────────────────────────────────────── -->
-<div class="modal fade" id="modal-zeteo" tabindex="-1" aria-hidden="true">
+<!-- ── The Atlantic modal ─────────────────────────────────────── -->
+<div class="modal fade" id="modal-atlantic" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border-radius:10px;overflow:hidden;">
       <div class="modal-header" style="background:var(--navy);border:none;">
         <h5 class="modal-title" style="font-family:'Playfair Display',serif;color:#fff;font-size:1.05rem;">
-          Zeteo — Latest Articles
+          The Atlantic — Latest Articles
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-2" id="modal-zeteo-body">
+      <div class="modal-body p-2" id="modal-atlantic-body">
+        <div class="text-center py-4 text-muted">Loading…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── National Review modal ──────────────────────────────────── -->
+<div class="modal fade" id="modal-nationalreview" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="border-radius:10px;overflow:hidden;">
+      <div class="modal-header" style="background:var(--navy);border:none;">
+        <h5 class="modal-title" style="font-family:'Playfair Display',serif;color:#fff;font-size:1.05rem;">
+          National Review — Latest Articles
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-2" id="modal-nationalreview-body">
         <div class="text-center py-4 text-muted">Loading…</div>
       </div>
     </div>
@@ -172,17 +216,13 @@ let articleData = { title: "", author: "", date: "", body: "", url: "", source: 
 document.querySelectorAll('.group-card').forEach(card => {
   card.addEventListener('click', () => {
     const cb = card.querySelector('.group-checkbox');
+    if (!cb.checked && selectedGroupIds().length >= 2) return; // block 3rd selection
     cb.checked = !cb.checked;
     card.classList.toggle('selected', cb.checked);
     updateRunButton();
   });
 });
 
-document.getElementById('btn-select-all').addEventListener('click', () => {
-  document.querySelectorAll('.group-checkbox').forEach(cb => { cb.checked = true; });
-  document.querySelectorAll('.group-card').forEach(c => c.classList.add('selected'));
-  updateRunButton();
-});
 document.getElementById('btn-clear-groups').addEventListener('click', () => {
   document.querySelectorAll('.group-checkbox').forEach(cb => { cb.checked = false; });
   document.querySelectorAll('.group-card').forEach(c => c.classList.remove('selected'));
@@ -198,15 +238,16 @@ function selectedGroupIds() {
   return [...document.querySelectorAll('.group-checkbox:checked')].map(cb => cb.value);
 }
 function selectedModelKeys() {
-  return [...document.querySelectorAll('.model-checkbox:checked')].map(cb => cb.value);
+  const checked = document.querySelector('.model-checkbox:checked');
+  return checked ? [checked.value] : [];
 }
 function updateRunButton() {
   const hasText = document.getElementById('article-body').value.trim().length > 50;
-  const groupsOk = selectedGroupIds().length >= 2;
+  const groupsOk = selectedGroupIds().length === 2;
   const modelsOk = selectedModelKeys().length >= 1;
   document.getElementById('btn-run').disabled = !(hasText && groupsOk && modelsOk);
   document.getElementById('group-validation-msg').style.display =
-    selectedGroupIds().length === 1 ? 'block' : 'none';
+    selectedGroupIds().length > 0 && !groupsOk ? 'block' : 'none';
 }
 
 /* ── Article metadata bar ────────────────────────────────────── */
@@ -227,9 +268,13 @@ function showMeta(data) {
 }
 
 /* ── Article list modals ─────────────────────────────────────── */
+const SOURCE_MODAL = {
+  aljazeera:      { modalId: 'modal-aljazeera',     bodyId: 'modal-aljazeera-body' },
+  atlantic:       { modalId: 'modal-atlantic',       bodyId: 'modal-atlantic-body' },
+  nationalreview: { modalId: 'modal-nationalreview', bodyId: 'modal-nationalreview-body' },
+};
 async function openSourceModal(source) {
-  const modalId = source === 'aljazeera' ? 'modal-aljazeera' : 'modal-zeteo';
-  const bodyId  = source === 'aljazeera' ? 'modal-aljazeera-body' : 'modal-zeteo-body';
+  const { modalId, bodyId } = SOURCE_MODAL[source];
   const modal = new bootstrap.Modal(document.getElementById(modalId));
   modal.show();
 
@@ -281,8 +326,9 @@ async function openSourceModal(source) {
   }
 }
 
+document.getElementById('btn-load-atlantic').addEventListener('click', () => openSourceModal('atlantic'));
+document.getElementById('btn-load-nationalreview').addEventListener('click', () => openSourceModal('nationalreview'));
 document.getElementById('btn-load-aljazeera').addEventListener('click', () => openSourceModal('aljazeera'));
-document.getElementById('btn-load-zeteo').addEventListener('click', () => openSourceModal('zeteo'));
 
 /* ── Form submit ─────────────────────────────────────────────── */
 document.getElementById('audit-form').addEventListener('submit', async (e) => {
@@ -301,7 +347,7 @@ document.getElementById('audit-form').addEventListener('submit', async (e) => {
   const numModels = modelKeys.length;
   const numGroups = groupIds.length;
   document.querySelector('#loading-overlay .loading-subtitle').textContent =
-    `Running ${numModels} model${numModels > 1 ? 's' : ''} × ${numGroups} groups × 3 runs in parallel`;
+    `Running ${numModels} model${numModels > 1 ? 's' : ''} × ${numGroups} groups × 1 run in parallel`;
 
   document.getElementById('loading-overlay').classList.add('active');
 

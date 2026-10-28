@@ -65,7 +65,7 @@ class AudienceEffectResponse(BaseModel):  # [structured-output]
 # ── Pipeline intermediate types ───────────────────────────────────────────────
 
 class RunResult(BaseModel):
-    """Result of a single LLM run (one of three per group × model cell)."""
+    """Result of one LLM call for a group × model cell."""
     label:      EffectLabel
     confidence: Optional[Confidence] = None
     rationale:  str = ""

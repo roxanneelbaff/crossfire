@@ -1,28 +1,37 @@
 /* ═══════════════════════════════════════════════════════════════
-   CROSSFIRE — Argument Quality Auditor
+   CROSSFIRE — Argument Quality Simulator
    Audience-Aware Computational Argumentation · El Baff, 2026
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --navy:      #0F1C35;
-  --navy-mid:  #1a2d4d;
-  --crimson:   #9B1B30;
-  --crimson-d: #7a1526;
-  --teal:      #007D71;
-  --teal-d:    #005f56;
-  --offwhite:  #F5F4F0;
-  --dark-text: #1A1A2E;
-  --muted:     #6c757d;
+  /* Chrome — forest green */
+  --navy:      #1E4035;
+  --navy-mid:  #255244;
+  --offwhite:  #FFFFFF;
+  --dark-text: #1A1A1A;
+  --muted:     #6b7280;
 
-  --challenging: #9B1B30;
-  --reinforcing: #007D71;
-  --ineffective: #5a6474;
-  --quality-high:   #1a7a3a;
-  --quality-medium: #0056b3;
+  /* Accents */
+  --crimson:   #1E4035;
+  --crimson-d: #163028;
+  --teal:      #1E4035;
+  --teal-d:    #163028;
+
+  /* Conservative / Liberal identity colors (section labels, pills only) */
+  --con-color: #9B2B2B;   /* deep red */
+  --lib-color: #1A4A7A;   /* deep blue */
+  --mod-color: #4B5563;   /* neutral gray */
+
+  /* Result semantics */
+  --challenging: #9B2B2B;
+  --reinforcing: #1E4035;
+  --ineffective: #4B5563;
+  --quality-high:   #1E4035;
+  --quality-medium: #1A4A7A;
   --quality-low:    #c96a00;
-  --quality-lowest: #721c24;
+  --quality-lowest: #9B2B2B;
 }
 
 * { box-sizing: border-box; }
@@ -39,7 +48,7 @@ body {
 .navbar-crossfire {
   background: var(--navy);
   padding: 0.75rem 2rem;
-  border-bottom: 3px solid var(--crimson);
+  border-bottom: 2px solid rgba(255,255,255,0.1);
 }
 .navbar-brand-title {
   font-family: 'Playfair Display', serif;
@@ -111,7 +120,7 @@ body {
 }
 .group-card.selected {
   border-color: var(--navy);
-  background: #f0f3f9;
+  background: #eef4f1;
 }
 .group-card .group-name {
   font-family: 'Playfair Display', serif;
@@ -133,9 +142,9 @@ body {
   border-radius: 20px;
   color: #fff;
 }
-.pill-conservative { background: #8b3a3a; }
-.pill-liberal      { background: var(--teal); }
-.pill-moderate     { background: var(--muted); }
+.pill-conservative { background: var(--con-color); }
+.pill-liberal      { background: var(--lib-color); }
+.pill-moderate     { background: var(--mod-color); }
 
 /* ── Source buttons ──────────────────────────────────────────── */
 .btn-source {
@@ -257,7 +266,7 @@ body {
   border-right: 1px solid rgba(255,255,255,0.1);
 }
 .results-table thead th.col-overall {
-  background: #0a1528;
+  background: #142820;
   border-left: 2px solid rgba(255,255,255,0.2);
 }
 .results-table tbody tr:nth-child(even) td { background: #f9f8f5; }
@@ -356,7 +365,7 @@ body {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(15, 28, 53, 0.88);
+  background: rgba(20, 40, 32, 0.88);
   z-index: 9999;
   align-items: center;
   justify-content: center;
@@ -431,7 +440,7 @@ textarea.article-input {
 textarea.article-input:focus {
   border-color: var(--navy);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(15,28,53,0.08);
+  box-shadow: 0 0 0 3px rgba(30,64,53,0.12);
 }
 
 /* ── Not configured row ──────────────────────────────────────── */

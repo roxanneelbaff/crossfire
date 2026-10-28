@@ -91,7 +91,7 @@ htmlcov/
 *.tmp
 *.swp
 *.swo
-
+.claude/
 __pycache__
 .history
 logs

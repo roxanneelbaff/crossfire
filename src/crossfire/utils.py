@@ -14,7 +14,7 @@ from .paths import PROMPTS_DIR
 MAX_RETRIES = 10
 
 
-def get_model(model_name: str, model_provider: str, temperature: float = 0.7):
+def get_model(model_name: str, model_provider: str, temperature: float = 0.2):
     """Load a chat model via langchain, dispatching on provider."""
     if model_provider in ("together", "mistralai"):
         llm = init_chat_model(

@@ -73,7 +73,7 @@ def compute_pairwise_and_overall(group_effects: dict) -> tuple:
 
 def apply_level1_majority(runs: list) -> str:
     """
-    k=1 majority rule with priority:
+    Aggregate run labels using this priority order (a single run passes through):
     1. Any CHALLENGING → CHALLENGING
     2. Any REINFORCING → REINFORCING
     3. Otherwise → INEFFECTIVE
